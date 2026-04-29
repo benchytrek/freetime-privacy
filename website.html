@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Freetime – Weniger scrollen. Mehr erleben.</title>
+  <meta name="description" content="Freetime ist der gemeinsame Kalender für deine Gruppe. Events erstellen, Freunde einladen, sofort bestätigen – kein Chaos mehr im Gruppenchat." />
+  <meta property="og:title" content="Freetime – Weniger scrollen. Mehr erleben." />
+  <meta property="og:description" content="Der gemeinsame Kalender für deine Gruppe. Events erstellen, Freunde einladen – Ja, Nein, Vielleicht. In Sekunden." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="og-image.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #06060f;
+      --bg2: #0d0d1a;
+      --glass: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.08);
+      --purple: #a855f7;
+      --indigo: #6366f1;
+      --pink: #ec4899;
+      --text: #f0f0ff;
+      --muted: #8888aa;
+      --gradient: linear-gradient(135deg, #a855f7, #6366f1);
+      --radius: 20px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ─── GLOW BLOBS ─── */
+    .blob {
+      position: fixed; border-radius: 50%; filter: blur(120px);
+      pointer-events: none; z-index: 0; opacity: 0.25;
+    }
+    .blob-1 { width: 600px; height: 600px; background: var(--purple); top: -200px; left: -200px; }
+    .blob-2 { width: 500px; height: 500px; background: var(--indigo); bottom: -150px; right: -150px; }
+    .blob-3 { width: 400px; height: 400px; background: var(--pink); top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.1; }
+
+    /* ─── NAVIGATION ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 18px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(6,6,15,0.7);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-logo {
+      font-size: 1.4rem; font-weight: 800; letter-spacing: -0.04em;
+      background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--gradient); color: white; border: none; border-radius: 12px;
+      padding: 10px 22px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.35);
+    }
+    .nav-cta:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    /* ─── MOBILE NAV ─── */
+    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--text); margin: 5px 0; border-radius: 2px; transition: 0.3s; }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .nav-links.open {
+        display: flex; flex-direction: column; gap: 16px;
+        position: fixed; top: 65px; left: 0; right: 0;
+        background: rgba(6,6,15,0.97); backdrop-filter: blur(20px);
+        padding: 24px 24px 32px; border-bottom: 1px solid var(--glass-border);
+      }
+      .nav-links.open a { font-size: 1.1rem; }
+      .hamburger { display: block; }
+    }
+
+    /* ─── SECTIONS BASE ─── */
+    section { position: relative; z-index: 1; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 120px 0 80px;
+    }
+    .hero-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 100px; padding: 6px 16px; font-size: 0.8rem; font-weight: 600;
+      color: var(--purple); margin-bottom: 24px;
+    }
+    .hero-badge::before { content: '●'; color: #4ade80; font-size: 0.6rem; }
+    h1 {
+      font-size: clamp(2.8rem, 5vw, 4.2rem);
+      font-weight: 900; line-height: 1.05; letter-spacing: -0.04em;
+      margin-bottom: 24px;
+    }
+    h1 span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub {
+      font-size: 1.15rem; color: var(--muted); line-height: 1.7; margin-bottom: 40px;
+      max-width: 480px;
+    }
+    .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--gradient); color: white; text-decoration: none;
+      padding: 16px 28px; border-radius: 14px; font-weight: 700; font-size: 1rem;
+      box-shadow: 0 8px 30px rgba(168,85,247,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(168,85,247,0.5); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 10px;
+      border: 1px solid var(--glass-border); color: var(--text); text-decoration: none;
+      padding: 15px 28px; border-radius: 14px; font-weight: 600; font-size: 1rem;
+      background: var(--glass); backdrop-filter: blur(10px);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover { border-color: rgba(168,85,247,0.5); background: rgba(168,85,247,0.08); }
+
+    /* ─── PHONE MOCKUPS ─── */
+    .hero-phones {
+      display: flex; justify-content: center; align-items: center;
+      position: relative; height: 560px;
+    }
+    .phone {
+      position: absolute;
+      width: 220px;
+      border-radius: 36px;
+      border: 8px solid rgba(255,255,255,0.12);
+      background: #111;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    .phone-main {
+      width: 240px; height: 500px; z-index: 3;
+      transform: translateX(0) rotate(0deg);
+    }
+    .phone-left {
+      width: 210px; height: 460px; z-index: 2;
+      transform: translateX(-160px) rotate(-8deg);
+      opacity: 0.7;
+    }
+    .phone-right {
+      width: 210px; height: 460px; z-index: 2;
+      transform: translateX(160px) rotate(8deg);
+      opacity: 0.7;
+    }
+    .phone-screen {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    /* Calendar screen */
+    .screen-cal {
+      background: linear-gradient(160deg, #0f0f1e 0%, #1a0a2e 100%);
+      padding: 16px 12px;
+    }
+    .screen-cal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; font-size: 11px; font-weight: 700; color: #fff;
+    }
+    .screen-cal-days { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 10px; }
+    .screen-day { text-align: center; }
+    .screen-day-label { font-size: 8px; color: #888; font-weight: 600; margin-bottom: 4px; }
+    .screen-day-num { font-size: 13px; font-weight: 800; color: #fff; }
+    .screen-day.today .screen-day-num {
+      background: linear-gradient(135deg,#a855f7,#6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .screen-event {
+      border-radius: 8px; padding: 7px 8px; margin-bottom: 6px;
+      font-size: 8px; font-weight: 600; position: relative; overflow: hidden;
+    }
+    .screen-event.purple { background: rgba(168,85,247,0.25); border-left: 2px solid #a855f7; color: #d8b4fe; }
+    .screen-event.indigo { background: rgba(99,102,241,0.25); border-left: 2px solid #6366f1; color: #a5b4fc; }
+    .screen-event.pink { background: rgba(236,72,153,0.25); border-left: 2px solid #ec4899; color: #f9a8d4; }
+    .screen-event-name { font-weight: 700; margin-bottom: 2px; font-size: 9px; }
+    .screen-avatars { display: flex; gap: 2px; margin-top: 3px; }
+    .screen-avatar { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #111; }
+
+    /* RSVP screen */
+    .screen-rsvp {
+      background: linear-gradient(160deg, #0f0f1e 0%, #0a1a2e 100%);
+      padding: 14px 12px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .rsvp-event-title { font-size: 12px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .rsvp-meta { font-size: 8px; color: #888; }
+    .rsvp-btn {
+      border-radius: 10px; padding: 8px; text-align: center;
+      font-size: 10px; font-weight: 700;
+    }
+    .rsvp-yes { background: rgba(74,222,128,0.2); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .rsvp-no { background: rgba(248,113,113,0.2); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .rsvp-maybe { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .rsvp-label { font-size: 8px; margin-bottom: 2px; opacity: 0.7; }
+
+    /* Notif screen */
+    .screen-notif {
+      background: #0d0d1a; padding: 14px 12px;
+    }
+    .notif-card {
+      background: rgba(255,255,255,0.07); border-radius: 12px;
+      padding: 10px; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start;
+    }
+    .notif-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--gradient); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .notif-text { font-size: 8px; color: #bbb; line-height: 1.4; }
+    .notif-text strong { color: #fff; }
+
+    /* ─── PROBLEM SECTION ─── */
+    #problem { padding: 100px 0; }
+    .problem-headline { text-align: center; margin-bottom: 60px; }
+    .section-label {
+      display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--purple); margin-bottom: 16px;
+    }
+    h2 {
+      font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.03em;
+      line-height: 1.1; margin-bottom: 16px;
+    }
+    .section-sub { font-size: 1.05rem; color: var(--muted); max-width: 560px; margin: 0 auto; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 60px; }
+    .stat-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 36px 28px; text-align: center;
+      backdrop-filter: blur(10px); transition: transform 0.3s, border-color 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
+    .stat-number { font-size: 3.5rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; margin-bottom: 8px; }
+    .stat-number.purple { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 12px; }
+    .stat-source { font-size: 0.72rem; color: rgba(136,136,170,0.6); font-style: italic; border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 10px; }
+
+    .problem-visual {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 48px 40px;
+      display: grid; grid-template-columns: 1fr 80px 1fr; gap: 0; align-items: center;
+    }
+    .problem-side { }
+    .problem-side h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+    .chat-bubble {
+      background: rgba(255,255,255,0.06); border-radius: 12px; padding: 10px 14px;
+      font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;
+      border-left: 3px solid rgba(168,85,247,0.3);
+    }
+    .chat-bubble.chaos { border-color: rgba(248,113,113,0.5); color: #f87171; font-size: 0.8rem; }
+    .arrow-divider { text-align: center; font-size: 2rem; color: var(--purple); }
+    .solution-side h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: #4ade80; }
+    .feature-check {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;
+    }
+    .feature-check::before { content: '✓'; color: #4ade80; font-weight: 700; flex-shrink: 0; }
+
+    /* ─── STUDY SECTION ─── */
+    #studien { padding: 100px 0; background: var(--bg2); }
+    .study-headline { text-align: center; margin-bottom: 60px; }
+    .studies-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .study-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 36px;
+      backdrop-filter: blur(10px); transition: transform 0.3s, border-color 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .study-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.25); }
+    .study-card::before {
+      content: '"'; position: absolute; top: -10px; left: 24px;
+      font-size: 8rem; font-weight: 900; color: rgba(168,85,247,0.08); line-height: 1;
+    }
+    .study-quote {
+      font-size: 1.1rem; font-weight: 600; line-height: 1.6; color: var(--text);
+      margin-bottom: 20px; position: relative; z-index: 1;
+    }
+    .study-meta { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--glass-border); padding-top: 14px; }
+    .study-meta strong { color: var(--purple); }
+
+    /* ─── FEATURES SECTION ─── */
+    #features { padding: 100px 0; }
+    .features-header { text-align: center; margin-bottom: 70px; }
+    .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .feature-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 40px 36px;
+      backdrop-filter: blur(10px); transition: transform 0.3s, border-color 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
+    .feature-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: var(--gradient); display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(168,85,247,0.3);
+    }
+    .feature-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+    .feature-desc { font-size: 0.95rem; color: var(--muted); line-height: 1.7; }
+    .feature-tag {
+      display: inline-block; margin-top: 16px;
+      background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 100px; padding: 4px 12px; font-size: 0.75rem; font-weight: 600; color: var(--purple);
+    }
+
+    /* ─── SCREENSHOTS SECTION ─── */
+    #screenshots { padding: 100px 0; background: var(--bg2); }
+    .screenshots-header { text-align: center; margin-bottom: 60px; }
+    .screenshots-scroll {
+      display: flex; gap: 24px; overflow-x: auto; padding: 20px 0 40px;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .screenshots-scroll::-webkit-scrollbar { display: none; }
+    .screenshot-item {
+      flex-shrink: 0; width: 220px;
+      border-radius: 28px; overflow: hidden;
+      border: 6px solid rgba(255,255,255,0.1);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+      background: #111;
+      transition: transform 0.3s;
+    }
+    .screenshot-item:hover { transform: scale(1.03) translateY(-8px); }
+    .screenshot-placeholder {
+      width: 100%; aspect-ratio: 9/19.5;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 20px; gap: 8px;
+    }
+    .screenshot-placeholder .icon { font-size: 2rem; }
+    .screenshot-placeholder p { font-size: 0.72rem; color: #888; font-weight: 500; }
+    .screenshot-placeholder span { font-size: 0.62rem; color: #555; }
+    .sc-bg-1 { background: linear-gradient(160deg, #0f0f2e, #1a0a3e); }
+    .sc-bg-2 { background: linear-gradient(160deg, #0a1a2e, #0f0f1e); }
+    .sc-bg-3 { background: linear-gradient(160deg, #1a0a1e, #0f0f2e); }
+    .sc-bg-4 { background: linear-gradient(160deg, #0a2e1a, #0f1e0f); }
+    .sc-bg-5 { background: linear-gradient(160deg, #2e1a0a, #1e0f0f); }
+    .screenshot-label { text-align: center; font-size: 0.8rem; color: var(--muted); margin-top: 14px; font-weight: 500; }
+    .screenshot-wrapper { text-align: center; }
+
+    /* ─── TEAM SECTION ─── */
+    #team { padding: 100px 0; }
+    .team-header { text-align: center; margin-bottom: 60px; }
+    .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .team-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 40px 28px; text-align: center;
+      backdrop-filter: blur(10px); transition: transform 0.3s, border-color 0.3s;
+    }
+    .team-card:hover { transform: translateY(-6px); border-color: rgba(168,85,247,0.3); }
+    .team-avatar {
+      width: 88px; height: 88px; border-radius: 50%; margin: 0 auto 20px;
+      background: var(--gradient); display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; font-weight: 800; color: white;
+      box-shadow: 0 12px 32px rgba(168,85,247,0.35);
+      border: 3px solid rgba(168,85,247,0.4);
+    }
+    .team-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+    .team-role {
+      display: inline-block; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 100px; padding: 4px 14px; font-size: 0.8rem; font-weight: 600; color: var(--purple);
+      margin-bottom: 16px;
+    }
+    .team-bio { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .team-emoji { font-size: 1.5rem; margin-bottom: 6px; }
+
+    /* ─── TIMELINE ─── */
+    #timeline { padding: 100px 0; background: var(--bg2); }
+    .timeline-header { text-align: center; margin-bottom: 70px; }
+    .timeline {
+      position: relative; max-width: 700px; margin: 0 auto;
+    }
+    .timeline::before {
+      content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
+      width: 2px; background: linear-gradient(to bottom, transparent, var(--purple), var(--indigo), rgba(168,85,247,0.2));
+      transform: translateX(-50%);
+    }
+    .timeline-item {
+      display: flex; gap: 40px; align-items: flex-start;
+      margin-bottom: 56px; position: relative;
+    }
+    .timeline-item:nth-child(odd) { flex-direction: row; }
+    .timeline-item:nth-child(even) { flex-direction: row-reverse; }
+    .timeline-content {
+      flex: 1; background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 28px;
+      backdrop-filter: blur(10px); transition: border-color 0.3s;
+    }
+    .timeline-content:hover { border-color: rgba(168,85,247,0.35); }
+    .timeline-content.active { border-color: rgba(168,85,247,0.5); background: rgba(168,85,247,0.06); }
+    .timeline-content.future { border-style: dashed; opacity: 0.75; }
+    .timeline-dot {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      background: var(--gradient); border: 3px solid var(--bg2);
+      box-shadow: 0 0 0 4px rgba(168,85,247,0.3);
+      margin-top: 14px; position: relative; z-index: 2;
+    }
+    .timeline-dot.active {
+      box-shadow: 0 0 0 6px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.4);
+      animation: pulse 2s infinite;
+    }
+    .timeline-dot.future { background: rgba(168,85,247,0.3); border: 2px dashed rgba(168,85,247,0.5); box-shadow: none; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 6px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(168,85,247,0.2), 0 0 30px rgba(168,85,247,0.2); }
+    }
+    .timeline-date { font-size: 0.75rem; font-weight: 700; color: var(--purple); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+    .timeline-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .timeline-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .timeline-status {
+      display: inline-block; margin-top: 12px; font-size: 0.72rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 100px;
+    }
+    .status-done { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .status-now { background: rgba(168,85,247,0.2); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.4); }
+    .status-next { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+
+    /* Center dot spacer for even items */
+    .timeline-item .spacer { flex: 1; }
+
+    /* ─── DOWNLOAD CTA ─── */
+    #download {
+      padding: 120px 0; text-align: center;
+      background: radial-gradient(ellipse at center, rgba(168,85,247,0.15) 0%, transparent 70%);
+    }
+    .download-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 100px; padding: 6px 16px; font-size: 0.78rem; font-weight: 600;
+      color: var(--purple); margin-bottom: 28px;
+    }
+    .download-headline { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 18px; }
+    .download-sub { font-size: 1.1rem; color: var(--muted); margin-bottom: 48px; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .appstore-btn {
+      display: inline-flex; align-items: center; gap: 14px;
+      background: #fff; color: #111; text-decoration: none;
+      padding: 16px 32px; border-radius: 16px; font-weight: 700; font-size: 1.05rem;
+      box-shadow: 0 12px 40px rgba(255,255,255,0.15);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .appstore-btn:hover { transform: translateY(-3px); box-shadow: 0 20px 50px rgba(255,255,255,0.2); }
+    .appstore-btn svg { width: 28px; height: 28px; }
+    .download-note { margin-top: 20px; font-size: 0.82rem; color: var(--muted); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--bg); border-top: 1px solid var(--glass-border);
+      padding: 48px 0 32px;
+    }
+    .footer-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 24px;
+    }
+    .footer-logo {
+      font-size: 1.2rem; font-weight: 800; letter-spacing: -0.04em;
+      background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .footer-tagline { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.85rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { font-size: 0.78rem; color: rgba(136,136,170,0.5); width: 100%; text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--glass-border); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; text-align: center; }
+      .hero-phones { height: 400px; margin: 0 auto; }
+      .hero-sub { margin: 0 auto 40px; }
+      .hero-ctas { justify-content: center; }
+      .stats-grid { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; }
+      .problem-visual { grid-template-columns: 1fr; gap: 24px; }
+      .arrow-divider { transform: rotate(90deg); }
+      .studies-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
+      .timeline::before { left: 20px; }
+      .timeline-item, .timeline-item:nth-child(even) { flex-direction: row; gap: 20px; }
+      .timeline-dot { margin-top: 14px; }
+      .spacer { display: none; }
+      .footer-inner { flex-direction: column; text-align: center; }
+      .phone-left, .phone-right { display: none; }
+      .phone-main { width: 220px; height: 460px; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 2.4rem; }
+      h2 { font-size: 1.8rem; }
+      section { padding: 60px 0; }
+      #hero { padding: 100px 0 60px; }
+      .hero-phones { height: 340px; }
+      .phone-main { width: 180px; height: 380px; }
+    }
+
+    /* ─── SCROLL ANIMATIONS ─── */
+    .fade-up {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Glow Blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- ─── NAVIGATION ─── -->
+<nav>
+  <a href="#" class="nav-logo">Freetime</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#studien">Studien</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#timeline">Timeline</a></li>
+    <li><a href="privacy-policy.html">Datenschutz</a></li>
+  </ul>
+  <a href="#download" class="nav-cta">Jetzt laden ↓</a>
+  <button class="hamburger" id="hamburger" aria-label="Menü">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-text fade-up">
+        <div class="hero-badge">Jetzt im App Store</div>
+        <h1>Weniger&nbsp;scrollen.<br/><span>Mehr erleben.</span></h1>
+        <p class="hero-sub">
+          Der gemeinsame Kalender für deine Gruppe. Events erstellen, Freunde einladen, sofort bestätigen —
+          kein Plan mehr im Gruppenchat vergraben.
+        </p>
+        <div class="hero-ctas">
+          <a href="#download" class="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Im App Store
+          </a>
+          <a href="#features" class="btn-secondary">Features ansehen →</a>
+        </div>
+      </div>
+
+      <!-- Phone Mockups -->
+      <div class="hero-phones fade-up">
+        <!-- Left phone – RSVP -->
+        <div class="phone phone-left">
+          <div class="phone-screen screen-rsvp">
+            <div style="font-size:9px;color:#888;font-weight:700;margin-bottom:10px;">EINLADUNG</div>
+            <div class="rsvp-event-title">🎉 Grillabend bei Jonas</div>
+            <div class="rsvp-meta">Samstag, 3. Mai · 18:00 Uhr · 6 eingeladen</div>
+            <div style="height:1px;background:rgba(255,255,255,0.06);margin:10px 0;"></div>
+            <div class="rsvp-btn rsvp-yes">✅ &nbsp;Ja, ich bin dabei!</div>
+            <div class="rsvp-btn rsvp-no" style="margin-top:6px">❌ &nbsp;Kann leider nicht</div>
+            <div class="rsvp-btn rsvp-maybe" style="margin-top:6px">🤔 &nbsp;Vielleicht</div>
+          </div>
+        </div>
+
+        <!-- Main phone – Calendar -->
+        <div class="phone phone-main">
+          <div class="phone-screen screen-cal">
+            <div class="screen-cal-header">
+              <span>April 2026</span>
+              <span style="color:#a855f7;">+ Event</span>
+            </div>
+            <div class="screen-cal-days">
+              <div class="screen-day"><div class="screen-day-label">MO</div><div class="screen-day-num">27</div></div>
+              <div class="screen-day today"><div class="screen-day-label">DI</div><div class="screen-day-num">28</div></div>
+              <div class="screen-day"><div class="screen-day-label">MI</div><div class="screen-day-num">29</div></div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:10px;"></div>
+            <div class="screen-event purple">
+              <div class="screen-event-name">🎬 Filmabend</div>
+              <div style="color:#aaa;font-size:7px;">20:00 · 4 dabei</div>
+              <div class="screen-avatars">
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#a855f7,#6366f1);"></div>
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#ec4899,#a855f7);"></div>
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#6366f1,#06b6d4);"></div>
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#4ade80,#06b6d4);"></div>
+              </div>
+            </div>
+            <div class="screen-event indigo">
+              <div class="screen-event-name">🏋️ Gym mit Lena</div>
+              <div style="color:#aaa;font-size:7px;">09:00 · 2 dabei</div>
+            </div>
+            <div class="screen-event pink">
+              <div class="screen-event-name">🎉 Grillabend</div>
+              <div style="color:#aaa;font-size:7px;">Sa, 3. Mai · 6 dabei</div>
+              <div class="screen-avatars">
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316);"></div>
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#a855f7,#ec4899);"></div>
+                <div class="screen-avatar" style="background:linear-gradient(135deg,#6366f1,#a855f7);"></div>
+              </div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.07);margin:8px 0;"></div>
+            <div style="font-size:7px;color:#666;text-align:center;">3 Events diese Woche</div>
+          </div>
+        </div>
+
+        <!-- Right phone – Notification -->
+        <div class="phone phone-right">
+          <div class="phone-screen screen-notif">
+            <div style="font-size:9px;color:#888;font-weight:700;margin-bottom:10px;">BENACHRICHTIGUNGEN</div>
+            <div class="notif-card">
+              <div class="notif-icon">🎉</div>
+              <div class="notif-text"><strong>Jonas hat ein Event erstellt</strong><br/>Grillabend · Sa, 3. Mai · Bist du dabei?</div>
+            </div>
+            <div class="notif-card">
+              <div class="notif-icon">✅</div>
+              <div class="notif-text"><strong>Lena sagt Ja!</strong><br/>Filmabend morgen · 4/6 bestätigt</div>
+            </div>
+            <div class="notif-card">
+              <div class="notif-icon">📅</div>
+              <div class="notif-text"><strong>Erinnerung in 1h</strong><br/>Gym mit Lena · 09:00 Uhr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PROBLEM SECTION ─── -->
+<section id="problem">
+  <div class="container">
+    <div class="problem-headline fade-up">
+      <div class="section-label">Das Problem</div>
+      <h2>Der Plan liegt begraben<br/>im Gruppenchat.</h2>
+      <p class="section-sub">Wer kennt's nicht? 800 ungelesene Nachrichten, niemand weiß was los ist, und am Ende passiert einfach nichts.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card fade-up">
+        <div class="stat-number purple">74%</div>
+        <div class="stat-label">der jungen Erwachsenen fühlen sich durch Gruppenchats überwältigt</div>
+        <div class="stat-source">Bitkom Research, Digitale Kommunikation 2023</div>
+      </div>
+      <div class="stat-card fade-up">
+        <div class="stat-number purple">2,5h</div>
+        <div class="stat-label">verbringt die Gen Z täglich mit Messaging-Apps — oft ohne Ergebnis</div>
+        <div class="stat-source">Statista, Social Media Nutzung Deutschland 2024</div>
+      </div>
+      <div class="stat-card fade-up">
+        <div class="stat-number purple">62%</div>
+        <div class="stat-label">der Pläne in Gruppenchats scheitern an fehlender klarer Koordination</div>
+        <div class="stat-source">Przybylski & Weinstein, FoMO Study, JCSP 2013</div>
+      </div>
+    </div>
+
+    <div class="problem-visual fade-up">
+      <div class="problem-side">
+        <h3 style="color:#f87171;">😵 Vorher: Chaos</h3>
+        <div class="chat-bubble chaos">"Wann nochmal?" 😭</div>
+        <div class="chat-bubble chaos">"Hä ich dachte morgen?"</div>
+        <div class="chat-bubble chaos">"Wer kommt überhaupt?"</div>
+        <div class="chat-bubble chaos">"Ich les jetzt erst..."</div>
+        <div class="chat-bubble chaos">800+ ungelesene Nachrichten 🔥</div>
+      </div>
+      <div class="arrow-divider">→</div>
+      <div class="problem-side solution-side">
+        <h3>✅ Nachher: Freetime</h3>
+        <div class="feature-check">Event in 10 Sekunden erstellt</div>
+        <div class="feature-check">Push-Benachrichtigung an alle</div>
+        <div class="feature-check">Ja / Nein / Vielleicht in einem Tap</div>
+        <div class="feature-check">Live-Kalender für alle sichtbar</div>
+        <div class="feature-check">Kein Chaos. Kein Scrollen. Kein Vergessen.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STUDIEN SECTION ─── -->
+<section id="studien">
+  <div class="container">
+    <div class="study-headline fade-up">
+      <div class="section-label">Wissenschaft</div>
+      <h2>Was die Forschung sagt</h2>
+      <p class="section-sub">Freetime löst kein triviales Problem — sondern ein real belegtes Phänomen unserer Generation.</p>
+    </div>
+
+    <div class="studies-grid">
+      <div class="study-card fade-up">
+        <div class="study-quote">
+          „Fear of Missing Out ist eng verknüpft mit einem Mangel an qualitativ hochwertiger sozialer Zeit —
+          nicht mit einem Mangel an sozialen Kontakten."
+        </div>
+        <div class="study-meta">
+          <strong>Przybylski, Murayama, DeHaan & Gladwell (2013)</strong><br/>
+          Motivational, emotional, and behavioral correlates of fear of missing out.<br/>
+          Computers in Human Behavior, 29(4), 1841–1848.
+        </div>
+      </div>
+
+      <div class="study-card fade-up">
+        <div class="study-quote">
+          „Die Fragmentierung von Kommunikation auf Messaging-Plattformen erzeugt
+          erheblichen Koordinationsaufwand in sozialen Gruppen und reduziert die Wahrscheinlichkeit gemeinsamer Aktivitäten."
+        </div>
+        <div class="study-meta">
+          <strong>Turkle, S. (2015)</strong><br/>
+          Alone Together: Why We Expect More from Technology and Less from Each Other.<br/>
+          Basic Books — MIT Initiative on Technology and Self
+        </div>
+      </div>
+
+      <div class="study-card fade-up">
+        <div class="study-quote">
+          „WhatsApp-Gruppen werden primär als Informationskanal genutzt, nicht als
+          Planungsinfrastruktur — was zu systematischer Unterkoordination in Peer-Gruppen führt."
+        </div>
+        <div class="study-meta">
+          <strong>Church & De Oliveira (2013)</strong><br/>
+          What's up with WhatsApp? Comparing Mobile Instant Messaging Behaviors.<br/>
+          MobileHCI 2013, ACM Conference
+        </div>
+      </div>
+
+      <div class="study-card fade-up">
+        <div class="study-quote">
+          „Klare, strukturierte Koordinationstools steigern die tatsächliche Teilnahme
+          an Gruppenaktivitäten signifikant — besonders bei jungen Erwachsenen (18–28 Jahre)."
+        </div>
+        <div class="study-meta">
+          <strong>Xu et al. (2020)</strong><br/>
+          Social Coordination in Mobile Group Communication.<br/>
+          Proceedings of ACM CHI Conference on Human Factors in Computing Systems
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES SECTION ─── -->
+<section id="features">
+  <div class="container">
+    <div class="features-header fade-up">
+      <div class="section-label">Features</div>
+      <h2>Alles was du brauchst,<br/>nichts was du nicht brauchst.</h2>
+      <p class="section-sub">Freetime ist radikal einfach — und genau das ist der Punkt.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card fade-up">
+        <div class="feature-icon">📅</div>
+        <div class="feature-title">Gemeinsamer Kalender</div>
+        <div class="feature-desc">
+          3-Tage-Übersicht für die ganze Gruppe. Jeder sieht auf einen Blick, was wann geplant ist —
+          und wer dabei ist. Live synchronisiert, immer aktuell.
+        </div>
+        <span class="feature-tag">3-Tage-View</span>
+      </div>
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon">✅</div>
+        <div class="feature-title">RSVP in einem Tap</div>
+        <div class="feature-desc">
+          Ja. Nein. Vielleicht. Fertig. Kein langer Text, keine Missverständnisse.
+          Freunde bestätigen direkt aus der Push-Benachrichtigung — ohne die App öffnen zu müssen.
+        </div>
+        <span class="feature-tag">Push · Ja / Nein / Vielleicht</span>
+      </div>
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🔔</div>
+        <div class="feature-title">Smarte Push-Notifications</div>
+        <div class="feature-desc">
+          Niemand verpasst mehr ein Event. Sobald jemand ein Event erstellt,
+          landen die richtigen Personen mit einer klaren Einladung direkt auf dem Lock Screen.
+        </div>
+        <span class="feature-tag">Firebase Cloud Messaging</span>
+      </div>
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon">📸</div>
+        <div class="feature-title">Snap-Feature</div>
+        <div class="feature-desc">
+          Halte gemeinsame Momente fest — direkt in der App.
+          Spontane Fotos werden an alle Event-Teilnehmer geteilt. Wie BeReal, aber für eure Gruppe.
+        </div>
+        <span class="feature-tag">Neu</span>
+      </div>
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-title">WhatsApp → Event (KI)</div>
+        <div class="feature-desc">
+          Screenshot eines WhatsApp-Chats teilen und Freetime erkennt automatisch Datum, Uhrzeit
+          und Ort — und schlägt ein fertiges Event vor. Kein manuelles Tippen.
+        </div>
+        <span class="feature-tag">Coming Soon · Gemini AI</span>
+      </div>
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Fokus-Blocker</div>
+        <div class="feature-desc">
+          Weniger Scrollen bedeutet auch: die richtigen Apps zur richtigen Zeit blocken.
+          Apple Shortcuts-basiert, kein Screen Time API-Hack — sauber und App Store konform.
+        </div>
+        <span class="feature-tag">Shortcuts-basiert</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SCREENSHOTS SECTION ─── -->
+<section id="screenshots">
+  <div class="container">
+    <div class="screenshots-header fade-up">
+      <div class="section-label">App Previews</div>
+      <h2>Sieh Freetime in Aktion</h2>
+      <p class="section-sub">Platziere hier deine echten App-Screenshots für den App Store Launch.</p>
+    </div>
+
+    <div class="screenshots-scroll fade-up">
+      <div class="screenshot-wrapper">
+        <div class="screenshot-item">
+          <div class="screenshot-placeholder sc-bg-1">
+            <span class="icon">📅</span>
+            <p>Kalender-Übersicht</p>
+            <span>Screenshot hier einfügen</span>
+          </div>
+        </div>
+        <div class="screenshot-label">Kalender</div>
+      </div>
+      <div class="screenshot-wrapper">
+        <div class="screenshot-item">
+          <div class="screenshot-placeholder sc-bg-2">
+            <span class="icon">✅</span>
+            <p>Event & RSVP</p>
+            <span>Screenshot hier einfügen</span>
+          </div>
+        </div>
+        <div class="screenshot-label">RSVP</div>
+      </div>
+      <div class="screenshot-wrapper">
+        <div class="screenshot-item">
+          <div class="screenshot-placeholder sc-bg-3">
+            <span class="icon">🔔</span>
+            <p>Push-Benachrichtigung</p>
+            <span>Screenshot hier einfügen</span>
+          </div>
+        </div>
+        <div class="screenshot-label">Notifications</div>
+      </div>
+      <div class="screenshot-wrapper">
+        <div class="screenshot-item">
+          <div class="screenshot-placeholder sc-bg-4">
+            <span class="icon">📸</span>
+            <p>Snap-Feature</p>
+            <span>Screenshot hier einfügen</span>
+          </div>
+        </div>
+        <div class="screenshot-label">Snap</div>
+      </div>
+      <div class="screenshot-wrapper">
+        <div class="screenshot-item">
+          <div class="screenshot-placeholder sc-bg-5">
+            <span class="icon">👥</span>
+            <p>Freunde einladen</p>
+            <span>Screenshot hier einfügen</span>
+          </div>
+        </div>
+        <div class="screenshot-label">Friends</div>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:0.82rem;color:rgba(136,136,170,0.5);margin-top:0;">
+      💡 Screenshots mit echten App-Bildern austauschen — einfach die Placeholder-Divs durch &lt;img&gt; Tags ersetzen.
+    </p>
+  </div>
+</section>
+
+<!-- ─── TEAM SECTION ─── -->
+<section id="team">
+  <div class="container">
+    <div class="team-header fade-up">
+      <div class="section-label">Das Team</div>
+      <h2>Gebaut von Menschen,<br/>die das Problem kennen.</h2>
+      <p class="section-sub">Wir sind selbst in tausend Gruppenchats und haben Freetime für uns selbst gebaut.</p>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card fade-up">
+        <div class="team-avatar">B</div>
+        <div class="team-name">Ben</div>
+        <div class="team-role">Developer & Designer</div>
+        <div class="team-bio">
+          Verantwortlich für die gesamte iOS-Entwicklung in Swift / SwiftUI und das UI/UX-Design der App.
+          Baut mit Firebase, liebt saubere Architektur und hasst Chaos im Gruppenchat.
+        </div>
+      </div>
+
+      <div class="team-card fade-up">
+        <div class="team-avatar">P</div>
+        <div class="team-name">Philip</div>
+        <div class="team-role">Videograph</div>
+        <div class="team-bio">
+          Verantwortlich für das visuelle Storytelling von Freetime. Dreht und schneidet alle
+          Reels, Trailers und Marketing-Videos — mit dem Blick für den perfekten Shot.
+        </div>
+      </div>
+
+      <div class="team-card fade-up">
+        <div class="team-avatar">L</div>
+        <div class="team-name">Lena</div>
+        <div class="team-role">Social Media</div>
+        <div class="team-bio">
+          Bringt Freetime auf Instagram, TikTok und darüber hinaus. Verantwortlich für
+          Community-Aufbau, Content-Strategie und dafür, dass die richtigen Menschen
+          von Freetime erfahren.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TIMELINE SECTION ─── -->
+<section id="timeline">
+  <div class="container">
+    <div class="timeline-header fade-up">
+      <div class="section-label">Roadmap</div>
+      <h2>Von der Idee zum App Store.</h2>
+      <p class="section-sub">Unsere Reise — woher wir kommen, wo wir stehen, wo wir hinwollen.</p>
+    </div>
+
+    <div class="timeline">
+
+      <!-- Item 1 -->
+      <div class="timeline-item fade-up">
+        <div class="timeline-content">
+          <div class="timeline-date">Frühjahr 2025</div>
+          <div class="timeline-title">💡 Die Idee</div>
+          <div class="timeline-desc">
+            Aus einem gescheiterten Grillabend — vergraben in 400 WhatsApp-Nachrichten —
+            entsteht die Frage: Warum gibt es keinen gemeinsamen Kalender für Freunde?
+            Erste Skizzen, erste Gespräche.
+          </div>
+          <span class="timeline-status status-done">✓ Abgeschlossen</span>
+        </div>
+        <div class="timeline-dot"></div>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="timeline-item fade-up">
+        <div class="spacer"></div>
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-date">Sommer 2025</div>
+          <div class="timeline-title">🔨 Erster Prototyp</div>
+          <div class="timeline-desc">
+            SwiftUI-Prototyp mit Firebase-Backend. Erster Kalender, erste Events,
+            erste echte Tests im Freundeskreis. Figma-Designs entstehen.
+            Das Team formiert sich: Ben, Philip, Lena.
+          </div>
+          <span class="timeline-status status-done">✓ Abgeschlossen</span>
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="timeline-item fade-up">
+        <div class="timeline-content">
+          <div class="timeline-date">Herbst 2025</div>
+          <div class="timeline-title">⚙️ Core-Features Development</div>
+          <div class="timeline-desc">
+            RSVP-System, Push-Notifications via Firebase Cloud Messaging, Freundeslisten,
+            BeReal-Style Snap-Feature und der Fokus-Blocker via Apple Shortcuts.
+            Erste Präsentation beim Garage 33 Startup-Programm.
+          </div>
+          <span class="timeline-status status-done">✓ Abgeschlossen</span>
+        </div>
+        <div class="timeline-dot"></div>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- Item 4 — NOW -->
+      <div class="timeline-item fade-up">
+        <div class="spacer"></div>
+        <div class="timeline-dot active"></div>
+        <div class="timeline-content active">
+          <div class="timeline-date">Frühjahr 2026 · Jetzt</div>
+          <div class="timeline-title">🚀 App Store Vorbereitung</div>
+          <div class="timeline-desc">
+            TestFlight Beta läuft. Architektur-Review abgeschlossen. App Store Compliance gecheckt.
+            Marketing-Reel in Produktion. Moonshot Pitch beim Garage 33 Pitch Event in Vorbereitung.
+            Launch steht bevor.
+          </div>
+          <span class="timeline-status status-now">● Jetzt</span>
+        </div>
+      </div>
+
+      <!-- Item 5 — FUTURE -->
+      <div class="timeline-item fade-up">
+        <div class="timeline-content future">
+          <div class="timeline-date">Sommer 2026</div>
+          <div class="timeline-title">🌟 App Store Launch</div>
+          <div class="timeline-desc">
+            Freetime geht live im deutschen App Store. Community-Aufbau über Social Media startet.
+            Erstes Feedback aus der echten Welt. Ziel: 1.000 aktive Nutzer in den ersten 90 Tagen.
+          </div>
+          <span class="timeline-status status-next">→ Geplant</span>
+        </div>
+        <div class="timeline-dot future"></div>
+        <div class="spacer"></div>
+      </div>
+
+      <!-- Item 6 — FUTURE -->
+      <div class="timeline-item fade-up">
+        <div class="spacer"></div>
+        <div class="timeline-dot future"></div>
+        <div class="timeline-content future">
+          <div class="timeline-date">Herbst 2026 +</div>
+          <div class="timeline-title">🤖 KI-Features & Android</div>
+          <div class="timeline-desc">
+            WhatsApp-Screenshot → automatische Event-Erkennung via Gemini AI.
+            Live Activities & Dynamic Island. Android-Version.
+            Internationalisierung — beyond Deutschland.
+          </div>
+          <span class="timeline-status status-next">→ Vision</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── DOWNLOAD CTA ─── -->
+<section id="download">
+  <div class="container">
+    <div class="download-badge">
+      <span>🎉</span> Bald im App Store
+    </div>
+    <h2 class="download-headline fade-up">
+      Bereit für weniger<br/>Chaos und mehr Pläne?
+    </h2>
+    <p class="download-sub fade-up">
+      Freetime erscheint bald im deutschen App Store.
+      Trag dich jetzt in die Warteliste ein und sei einer der Ersten.
+    </p>
+    <div class="fade-up">
+      <a href="https://apps.apple.com" class="appstore-btn" target="_blank" rel="noopener">
+        <!-- Apple Logo SVG -->
+        <svg viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+        </svg>
+        <div style="text-align:left;">
+          <div style="font-size:0.7rem;font-weight:500;opacity:0.7;">Im App Store laden auf</div>
+          <div style="font-size:1.1rem;font-weight:800;line-height:1.2;">iPhone</div>
+        </div>
+      </a>
+    </div>
+    <p class="download-note">Kostenlos · Erscheint 2026 · iOS 16+</p>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Freetime</div>
+        <div class="footer-tagline">Weniger scrollen. Mehr erleben.</div>
+      </div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#studien">Studien</a>
+        <a href="#team">Team</a>
+        <a href="#timeline">Timeline</a>
+        <a href="privacy-policy.html">Datenschutz</a>
+        <a href="impressum.html">Impressum</a>
+      </div>
+    </div>
+    <div class="footer-copy">
+      © 2026 Freetime · Gebaut mit ❤️ in Deutschland · Made for iOS
+    </div>
+  </div>
+</footer>
+
+<!-- ─── SCRIPTS ─── -->
+<script>
+  // Hamburger Menu
+  const hamburger = document.getElementById('hamburger');
+  const navLinks = document.getElementById('navLinks');
+  hamburger.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+  });
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => navLinks.classList.remove('open'));
+  });
+
+  // Scroll Animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        // Stagger children
+        entry.target.querySelectorAll('.fade-up').forEach((el, i) => {
+          setTimeout(() => el.classList.add('visible'), i * 100);
+        });
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Nav scroll effect
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 60) {
+      nav.style.background = 'rgba(6,6,15,0.92)';
+    } else {
+      nav.style.background = 'rgba(6,6,15,0.7)';
+    }
+  });
+</script>
+
+</body>
+</html>
